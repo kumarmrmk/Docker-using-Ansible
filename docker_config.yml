@@ -1,0 +1,83 @@
+---
+- hosts: all
+  vars:
+          - dvd_dir: "/dvd1"
+  tasks:
+          - name: "creating directory"
+            file:
+                  state: directory
+                  path: "{{dvd_dir}}"
+
+          - name: "mounting dvd"
+            mount:
+                  src: "/dev/cdrom"
+                  path: "{{ dvd_dir }}"
+                  state: mounted
+                  fstype: iso9660
+
+          - name: "creating yum repo 1"
+            yum_repository:
+                  baseurl: "{{ dvd_dir }}/AppStream"
+                  name: "dvd1"
+                  gpgcheck: no
+                  description: "appstream yum repo"
+
+          - name: "creating yum repo2"
+            yum_repository:
+                  baseurl: "{{dvd_dir}}/BaseOS"
+                  name: "dvd2"
+                  gpgcheck: no
+                  description: "baseos yum repo"
+
+          - name: "creating repository for Docker"
+            yum_repository:
+                  baseurl: "https://download.docker.com/linux/centos/7/x86_64/stable/"
+                  name: "docker-ce"
+                  description: "Docker-ce repo"
+                  gpgcheck: no
+
+          - name: "installing python"
+            package:
+                  name: "python3"
+                  state: present
+
+          - name: "installing Docker"
+            package: 
+                  name: "docker-ce-18.09.1-3.el7.x86_64"
+                  state: present
+
+          - pip:
+                 name: "docker-py"
+
+          - name: "starting Docker service"
+            service:
+                  name: "docker"
+                  state: "started"
+                  enabled: yes
+
+          - name: "creating html directory"
+            file:
+                  state: directory
+                  path: "/html"
+
+          - name: "copying content to html page"        
+            copy:
+                  dest: "/html/docker1.html"
+                  content: "running httpd services on docker using ansible"
+
+          - name: "pulling docker image"
+            docker_image:
+                  name: "httpd:latest"
+                  source: pull
+
+          - name: "starting docker container"       
+            docker_container:
+                  name: "webserver"
+                  image: "httpd:latest"
+                  state: started
+                  exposed_ports: "80"
+                  ports: "8080:80"
+                  volumes: "/html:/usr/local/apache2/htdocs/"
+
+
+
